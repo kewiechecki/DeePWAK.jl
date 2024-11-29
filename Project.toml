@@ -2,3 +2,27 @@ name = "DeePWAK"
 uuid = "92881724-8e20-4814-a3b7-397623d3b5cc"
 authors = ["kewiechecki <kaw504@nyu.edu>"]
 version = "0.1.0"
+
+[deps]
+Autoencoders = "b00fdf05-2506-4616-becf-033b9f32b9b9"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
+Leiden = "8876827e-33c4-4373-8179-6e3204d93767"
+MultivariateStats = "6f286f6a-111f-5878-ab1e-185364afe411"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+igraph_jll = "4d841945-e0c2-5143-9479-18e4f0102556"
+leiden_jll = "b3d7b256-84d9-5f32-9065-d6f1a433f499"
+
+[compat]
+Autoencoders = "0.1.0"
+Distributions = "0.25.113"
+Flux = "0.14.25"
+Functors = "0.4.12"
+Leiden = "0.1.0"
+MultivariateStats = "0.10.3"
+Reexport = "1.2.2"
+SparseArrays = "1.11.0"
+igraph_jll = "0.9.10"
+leiden_jll = "0.8.2"

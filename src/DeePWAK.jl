@@ -18,33 +18,36 @@ include("DEWAKSS.jl")
 @doc raw"""
 `DeePWAK(autoencoder::DEWAKSS,γ::AbstractFloat)`
 
-
+Model for Denoising with deep learning of a Partitioned Weighted Affinity Kernel. 
 
 See also: `DEWAKSS`, `Autoencoders.AbstractPartitioned`, `Leiden.leiden`
 """
-struct DeePWAK <: AbstractPartitioned
-    dewak::DEWAKSS
+struct DEPWAK <: AbstractPartitioned
+    dewak :: DEWAKSS
     γ::AbstractFloat
+    clusts
+    partition
+    cache
 end
-@functor dewak
+@functor DEPWAK (dewak,)
 
-function dist(M::DeePWAK,E)
+function dist(M::DEPWAK,E)
     M.dewak.metric(predict(M.dewak.pca,E))
 end
 
-function knn(M::DeePWAK,D)
+function knn(M::DEPWAK,D)
     K = perm(D,M.dewak.k)
     knn(K,M.dewak.k)
 end
 
-function kern(M::DeePWAK,E)
+function kern(M::DEPWAK,E)
     D = dist(M,E)
     G = knn(M,D)
     G = G .* D
     wak(G)
 end
 
-function (M::DeePWAK)(X)
+function (M::DEPWAK)(X)
     decode(M,diffuse(M,X))
 end
 
