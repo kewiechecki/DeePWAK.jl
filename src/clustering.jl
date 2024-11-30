@@ -1,3 +1,7 @@
+function rep(expr,n)
+    return map(_->expr,1:n)
+end
+
 function perm(D::AbstractMatrix;dims=1,rev=true)
     n = size(D,1)
     K = sortperm(D,dims=dims,rev=rev) .% n

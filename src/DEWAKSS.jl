@@ -6,8 +6,8 @@ Cached distance matrices and neighbors for a `DEWAKSS` model.
 See also: `DEWAKSS`.
 """
 struct DEWAKache
-    D :: AbstractArray
-    K :: AbstractArray
+    D :: AbstractVector
+    K :: AbstractVector
     L :: AbstractArray
 end
 
@@ -31,19 +31,27 @@ struct DEWAKSS <: Autoencoders.AbstractDDAE
 end
 @functor DEWAKSS (autoencoder, metric)
 
-function DEWAKSS(X::AbstractMatrix)
+function DEWAKSS(X::AbstractMatrix; metric=inveucl)
     pca = fit(PCA,X)
     E = predict(pca,X)
 
     d_max,k_max = size(E)
     d = d_max ÷ 2
+    k = d
 
-    D = mapreduce(d->pcadist(E,d),zcat,1:d_max)
-    K = mapreduce(d->perm(d,k_max),zcat,D)
+    D = map(d->metric(E[1:d,:]),1:d_max)
+    K = map(d->perm(d,k_max),D)
+    G = knn(K[d],k)
+    
+    L_0 = Array{Float64}(undef,0,4)
     
     encoder = Autoencoder(identity,identity)
-    cache = DEWAKache(D,K)
-    DEWAKSS(encoder,inveucl,pca,d,d)
+    cache = DEWAKache(D,K,L_0)
+    
+    DEWAKSS(encoder, metric,
+            d, k,
+            G, wak(G .* D[d]), X,
+            pca,cache)
 end
 
 function dist(M::DEWAKSS,E::AbstractMatrix)
@@ -51,7 +59,11 @@ function dist(M::DEWAKSS,E::AbstractMatrix)
 end
 
 function dist(M::DEWAKSS,d::Union{Integer,UnitRange})
-    M.cache.D[:,:,d]
+    M.cache.D[d]
+end
+
+function knn(M::DEWAKSS)
+    M.graph
 end
 
 function knn(M::DEWAKSS,D::AbstractMatrix{<:AbstractFloat})
@@ -62,11 +74,11 @@ end
 function knn(M::DEWAKSS,
              d::Union{Integer,UnitRange},
              k::Union{Integer,UnitRange})
-    knn(M.cache.K[:,:,d],k)
+    knn(M.cache.K[d],k)
 end
 
 function kern(M::DEWAKSS)
-    kern(M,M.d,M.k)
+    M.kern
 end
 
 function kern(M::DEWAKSS,E::AbstractMatrix)
@@ -89,6 +101,10 @@ end
 
 function diffuse(M::DEWAKSS)
     (kern(M) * encode(M)')'
+end
+
+function loss(M::DEWAKSS)
+    M.cache.loss
 end
 
 function (M::DEWAKSS)(X)

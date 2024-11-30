@@ -2,53 +2,41 @@ module DeePWAK
 
 using Reexport
 using Flux, Functors
-@reexport using Autoencoders
+
 using Distributions, MultivariateStats, SparseArrays
 @reexport using Leiden
 
-export DEWAKSS, DeePWAK
-export dist, knn, kern
-export perm, clusts, partitionmat
+@reexport using Autoencoders
+import Autoencoders.encode
+import Autoencoders.decode
+
+import Autoencoders.diffuse
+import Autoencoders.dist
+import Autoencoders.kern
+
+import Autoencoders.cluster
+import Autoencoders.centroid
+import Autoencoders.partition
+
+import Autoencoders.loss
+
+@reexport using TrainingIO
+import TrainingIO.update!
+
+export encode, decode, diffuse, dist, kern
+export cluster, centroid, partiton
+export loss
+
 export update!
 
+export AbstractDEWAK, AbstractDeePWAK
+export DEWAK, DEPWAK, DDAEWAK
+export data, pca, knn, losslog
+export perm, clusts, partitionmat
+
 include("clustering.jl")
-
-include("DEWAKSS.jl")
-
-@doc raw"""
-`DeePWAK(autoencoder::DEWAKSS,γ::AbstractFloat)`
-
-Model for Denoising with deep learning of a Partitioned Weighted Affinity Kernel. 
-
-See also: `DEWAKSS`, `Autoencoders.AbstractPartitioned`, `Leiden.leiden`
-"""
-struct DEPWAK <: AbstractPartitioned
-    dewak :: DEWAKSS
-    γ::AbstractFloat
-    clusts
-    partition
-    cache
-end
-@functor DEPWAK (dewak,)
-
-function dist(M::DEPWAK,E)
-    M.dewak.metric(predict(M.dewak.pca,E))
-end
-
-function knn(M::DEPWAK,D)
-    K = perm(D,M.dewak.k)
-    knn(K,M.dewak.k)
-end
-
-function kern(M::DEPWAK,E)
-    D = dist(M,E)
-    G = knn(M,D)
-    G = G .* D
-    wak(G)
-end
-
-function (M::DEPWAK)(X)
-    decode(M,diffuse(M,X))
-end
+include("DEWAK.jl")
+include("DEPWAK.jl")
+include("DDAEWAK.jl")
 
 end # module DeePWAK
