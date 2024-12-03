@@ -9,6 +9,7 @@ function perm(D::AbstractMatrix;dims=1,rev=true)
     return K
 end
 
+#sortperm(d) is slower than partialsortperm(d,1:size(d,1)) and I don't know why
 function perm(D::AbstractMatrix,k_max::Integer;dims=1,rev=true)
     mapslices(d->partialsortperm(d,1:k_max,rev=rev),
               D,dims=dims)
@@ -28,13 +29,17 @@ function clusts(N,k,γ)
     return C
 end
 
-function partitionmat(C)
-    (sum ∘ map)(1:maximum(C)) do c
+function partitionmat_slow(C)
+    (sum ∘ map)(unique(C)) do c
         x = C .== c
         return x * x'
     end
 end
 
+function partitionmat(C)
+    v = onehotbatch(C,unique(C))
+    v' * v
+end
 
 function loss_clust(X,F,D,N,k,γ,s,M_sparse,M_dense)
     C = clusts(N,k,γ)

@@ -2,6 +2,7 @@
 `AbstractDEWAK <: AbstractDDAE`
 
 Should be callable and implement `data`, `encode`, `knn`, `dist`, `pca`.
+Should have field `cache::DEWAKache`.
 
 See also: `DEWAK`, `DDAEWAK`, `AbstractDDAE`, `AbstractEncoder`
 """
@@ -10,6 +11,12 @@ end
 
 function loss(M::AbstractDEWAK)
     Flux.mse(M(), data(M))
+end
+
+function loss(M::AbstractDEWAK,G::AbstractMatrix)
+    E = encode(M,data(M))
+    Ê = (G * E')'
+    Flux.mse(decode(M,Ê),data(M))
 end
 
 function kern(M::AbstractDEWAK,E::AbstractMatrix)
@@ -23,6 +30,18 @@ function diffuse(M::AbstractDEWAK)
     (kern(M) * E')'
 end
 
+function cache(M::AbstractDEWAK)
+    M.cache.dict
+end
+
+function updateloss!(M::AbstractDEWAK,params::DataFrame,loss::DataFrame)
+    updateloss!(M.cache,params,loss)
+end
+
+function losslog(M::AbstractDEWAK)
+    hcat(M.cache.params,M.cache.loss)
+end
+
 @doc raw"""
 DEWAKache(D,K,L)
 
@@ -30,10 +49,19 @@ Cached distance matrices and neighbors for a `DEWAK` model.
 
 See also: `DEWAK`.
 """
-struct DEWAKache
-    D :: AbstractVector
-    K :: AbstractVector
-    L :: AbstractArray
+mutable struct DEWAKache
+    dict :: Dict
+    params :: DataFrame
+    loss :: DataFrame
+end
+
+function losslabels(cache::DEWAKache)
+    names(cache.loss)
+end
+
+function updateloss!(cache::DEWAKache,params::DataFrame,L::DataFrame)
+    cache.params = vcat(cache.params,params)
+    cache.loss = vcat(cache.loss,L)
 end
 
 @doc raw"""
@@ -43,11 +71,12 @@ Denoising with a Weighted Affinity Kernel [originally for] Single cell Sequencin
 
 See also: `DeePWAK`, `Autoencoders.AbstractDDAE`
 """
-struct DEWAK <: AbstractDEWAK
-    autoencoder::Autoencoders.AbstractEncoder
+mutable struct DEWAK <: AbstractDEWAK
     metric
     d::Integer
     k::Integer
+    pcs::AbstractMatrix
+    dist::AbstractMatrix
     graph::AbstractMatrix
     kern::AbstractMatrix
     dat
@@ -56,27 +85,79 @@ struct DEWAK <: AbstractDEWAK
 end
 @functor DEWAK (autoencoder, metric)
 
-function DEWAK(X::AbstractMatrix; metric=inveucl)
+function updatecache!(M::DEWAK, X::AbstractMatrix)
+    M.dat = X
+    M.pca = fit(PCA,X)
+    M.pcs = predict(M.pca,X)
+
+    d_max,k_max = size(E)
+    M.d = minimum(M.d,d_max)
+    M.k = minimum(M.k,k_max)
+    
+    M.dist = metric(M.pcs[1:M.d,:])
+
+    K = perm(M.dist,M.k)
+
+    M.graph = knn(K,M.k)
+    M.kern = kern(M,M.graph) 
+end
+
+function DEWAK(X::AbstractMatrix;
+               metric=inveucl, losslabs=[:mse],
+               d_0 = 1, k_0 = 1)
     pca = fit(PCA,X)
     E = predict(pca,X)
 
     d_max,k_max = size(E)
-    d = d_max ÷ 2
-    k = d
+    #d = d_max ÷ 2
+    #k = d
 
-    D = map(d->metric(E[1:d,:]),1:d_max)
-    K = map(d->perm(d,k_max),D)
-    G = knn(K[d],k)
+    D = metric(E[1:d_0,:])
+    K = perm(D,k_0)
+    G = knn(K,k_0)
+    #D = map(d->metric(E[1:d,:]),1:d_max)
+    #K = map(d->perm(d,k_max),D)
+    #G = knn(K[d],k)
     
-    L_0 = Array{Float64}(undef,0,4)
+    params_0 = DataFrame(Array{Integer}(undef,0,2),[:d,:k])
+    n_loss = length(losslabs)
+    L_0 = DataFrame(Array{Float64}(undef,0,n_loss),
+                    losslabs)
+
+    dict = Dict([(:d,[]),(:k,[])])
+    cache = DEWAKache(dict,params_0,L_0)
     
-    encoder = Autoencoder(identity,identity)
-    cache = DEWAKache(D,K,L_0)
-    
-    DEWAK(encoder, metric,
-            d, k,
-            G, wak(G .* D[d]), X,
-            pca,cache)
+    DEWAK(metric, d_0, k_0, E, D, G,
+          wak(G .* D), X,
+          pca,cache)
+end
+
+@doc raw"""
+`params(M::DEWAK) -> DataFrame`
+    """
+function params(M::DEWAK)
+    DataFrame(d=M.d,k=M.k)
+end
+
+function set_d!(M::DEWAK,d::Integer)
+    M.d = d
+end
+
+function set_k!(M::DEWAK,k::Integer)
+    M.k = k
+end
+
+@doc raw"""
+`set!(M::AbstractDEWAK, param::Symbol,
+      value::typeof(params(M)[1,param]) -> Nothing
+"""
+function set!(M::DEWAK, param::Symbol, val)
+    @match param begin
+        :d => set_d!(M,val)
+        :k => set_k!(M,val)
+        :loss => updateloss!(M,val...)
+        _ => printf(string(typeof(M))*" lacks parameter "*string(param))
+    end
 end
 
 @doc raw"""
@@ -99,15 +180,25 @@ function decode(M::DEWAK,X)
 end
 
 function pca(M::DEWAK, X)
-    predict(M.pca,E)
+    predict(M.pca,X)
 end
     
 function dist(M::DEWAK,X::AbstractMatrix)
     M.metric(pca(M,X))
 end
 
-function dist(M::DEWAK,d::Union{Integer,UnitRange})
-    M.cache.D[d]
+function dist(M::DEWAK,d::Integer)#d::Union{Integer,UnitRange})
+    #cache(M)[:d][d]
+    M.metric(M.pcs[1:d,:])
+end
+
+function dist(M::DEWAK)
+    #cache(M)[:d][M.d]
+    M.dist
+end
+
+function dist(cache::DEWAKache,d::Integer)#d::Union{Integer,UnitRange})
+    cache[:d][d]
 end
 
 function knn(M::DEWAK)
@@ -119,10 +210,40 @@ function knn(M::DEWAK,D::AbstractMatrix{<:AbstractFloat})
     knn(K,M.k)
 end
 
+function knn(M::DEWAK,D::AbstractMatrix{<:AbstractFloat},k::Integer)
+    K = perm(D,k)
+    knn(K,k)
+end
+
 function knn(M::DEWAK,
              d::Union{Integer,UnitRange},
              k::Union{Integer,UnitRange})
-    knn(M.cache.K[d],k)
+    #knn(cache(M)[:k][d],k)
+    D = dist(M,d)
+    knn(M,D,k)
+end
+
+function knn(M::DEWAK,k::Integer)
+    #knn(cache(M)[:k][M.d],k)
+    knn(M,M.d,k)
+end
+
+function knn(cache::DEWAKache,
+             d::Union{Integer,UnitRange},
+             k::Union{Integer,UnitRange})
+    knn(cache[:k][d],k)
+end
+
+function knn(M::DEWAK,cache::DEWAKache,k::Integer)
+    knn(cache[:k][M.d],k)
+end
+
+function kern(M::DEWAK,D::AbstractMatrix,G::AbstractMatrix)
+    wak(D .* G)
+end
+
+function kern(M::DEWAK,D::AbstractMatrix,k::Integer)
+    wak(D .* knn(M,D,k))
 end
 
 function kern(M::DEWAK)
@@ -139,10 +260,6 @@ end
 
 function encode(M::DEWAK)
     encode(M,M.dat)
-end
-
-function losslog(M::DEWAK)
-    M.cache.loss
 end
 
 function (M::DEWAK)(X)
