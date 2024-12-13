@@ -8,7 +8,7 @@ using RCall
 @rimport fgsea
 
 function pygraph(D,G)
-    igraph.Graph[:Adjacency](D .* G)
+    igraph.Graph[:Weighted_Adjacency](D .* G)
 end
 
 function pyleiden(graph, γ, args...; kwargs...)

@@ -13,9 +13,16 @@ function loss(M::AbstractDEWAK)
     Flux.mse(M(), data(M))
 end
 
-function loss(M::AbstractDEWAK,G::AbstractMatrix)
+#function loss(M::AbstractDEWAK,G::AbstractMatrix)
+#    E = encode(M,data(M))
+#    Ê = (G * E')'
+#    Flux.mse(decode(M,Ê),data(M))
+#end
+
+function loss(M::AbstractDEWAK,args...)
+    G = foldl(.*,[args...])
     E = encode(M,data(M))
-    Ê = (G * E')'
+    Ê = (wak(G) * E')'
     Flux.mse(decode(M,Ê),data(M))
 end
 
@@ -112,19 +119,22 @@ function DEWAK(X::AbstractMatrix;
     #d = d_max ÷ 2
     #k = d
 
-    D = metric(E[1:d_0,:])
-    K = perm(D,k_0)
-    G = knn(K,k_0)
-    #D = map(d->metric(E[1:d,:]),1:d_max)
-    #K = map(d->perm(d,k_max),D)
-    #G = knn(K[d],k)
+    #D = metric(E[1:d_0,:])
+    #K = perm(D,k_0)
+    #G = knn(K,k_0)
+    v_D = map(d->metric(E[1:d,:]),1:d_max)
+    v_K = map(D->perm(D,k_max),v_D)
+
+    D = v_D[d_0]
+    G = knn(v_K[d_0],k_0)
     
     params_0 = DataFrame(Array{Integer}(undef,0,2),[:d,:k])
     n_loss = length(losslabs)
     L_0 = DataFrame(Array{Float64}(undef,0,n_loss),
                     losslabs)
 
-    dict = Dict([(:d,[]),(:k,[])])
+    dict = Dict([(:d,v_D),(:k,v_K),
+                 (:dist,[]),(:graph,[])])
     cache = DEWAKache(dict,params_0,L_0)
     
     DEWAK(metric, d_0, k_0, E, D, G,
@@ -197,8 +207,8 @@ function dist(M::DEWAK)
     M.dist
 end
 
-function dist(cache::DEWAKache,d::Integer)#d::Union{Integer,UnitRange})
-    cache[:d][d]
+function dist(cache::DEWAKache,d::Union{Integer,UnitRange})
+    cache.dict[:d][d]
 end
 
 function knn(M::DEWAK)
@@ -231,14 +241,14 @@ end
 function knn(cache::DEWAKache,
              d::Union{Integer,UnitRange},
              k::Union{Integer,UnitRange})
-    knn(cache[:k][d],k)
+    knn(cache.dict[:k][d],k)
 end
 
 function knn(M::DEWAK,cache::DEWAKache,k::Integer)
-    knn(cache[:k][M.d],k)
+    knn(cache.dict[:k][M.d],k)
 end
 
-function kern(M::DEWAK,D::AbstractMatrix,G::AbstractMatrix)
+function kern(D::AbstractMatrix,G::AbstractMatrix)
     wak(D .* G)
 end
 
@@ -256,6 +266,21 @@ function kern(M::DEWAK,
     D = dist(M,d)
     G = knn(M,k)
     wak(G .* D)
+end
+
+function kern(cache::DEWAKache,
+              D::AbstractMatrix,
+              d::Union{Integer,UnitRange},
+              k::Union{Integer,UnitRange})
+    G = knn(cache,d,k)
+    wak(G .* D)
+end
+
+function kern(cache::DEWAKache,
+              d::Union{Integer,UnitRange},
+              k::Union{Integer,UnitRange})
+    D = dist(cache,d)
+    kern(cache,D,d,k)
 end
 
 function encode(M::DEWAK)
