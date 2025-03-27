@@ -28,13 +28,13 @@ import TrainingIO.update!
 
 export encode, decode, diffuse, dist, kern
 export cluster, centroid, partiton
-export loss
+export loss, lossfn
 
 export update!, updateparam!
 
 export AbstractDEWAK, AbstractDeePWAK
 export DEWAK, DEPWAK, DDAEWAK
-export params, set!, data, pca, knn, losslog
+export params, set!, data, pca, knn, graph, losslog
 export perm, clusts, partitionmat
 
 include("clustering.jl")
