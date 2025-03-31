@@ -55,3 +55,17 @@ function zcat(args...)
     cat(args...;dims=3)
 end
         
+# modularity score
+# supports probabilistic cluster assignment
+# accepts potentially weighted adjacency matrix G,
+# ptentially weighted partition matrix P, resolution γ
+function modularity(G::AbstractMatrix, P::AbstractMatrix, γ::AbstractFloat)
+    k_v = P * G
+    k_e = P * G'
+    e = sum(k_e, dims = 2)
+    μ = mean(e)
+    K = sum(k_v, dims = 2)
+    H = 1 / (2 * μ) * sum(e .- γ .* K .^ 2 ./ (2 * μ))
+    return H
+end
+

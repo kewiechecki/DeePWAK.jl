@@ -129,6 +129,8 @@ function DEWAK(X::AbstractMatrix;
     E = predict(pca, X)
 
     d_max, k_max = size(E)
+    d_0 = min(d_0, d_max)
+    k_0 = min(k_0, k_max)
     #d = d_max ÷ 2
     #k = d
 
