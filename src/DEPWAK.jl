@@ -44,7 +44,7 @@ end
 
 function DEPWAK(dewak::DEWAK, clustfn;
                 graphfn = (D, G)->(D .* G),
-                γ_0 = eps(), losslabs = [:mse])
+                γ_0 = eps())
     clusts = clustfn(graphfn(knn(dewak), dist(dewak)), γ_0)
     partition = partitionmat(clusts)
 
@@ -52,6 +52,7 @@ function DEPWAK(dewak::DEWAK, clustfn;
     n_params = length(id_params)
     params_0 = DataFrame(Array{Float64}(undef, 0, n_params), id_params)
 
+    losslabs = losslabels(dewak)
     n_loss = length(losslabs)
     L_0 = DataFrame(Array{Float64}(undef, 0, n_loss),
                     losslabs)

@@ -34,7 +34,7 @@ export update!, updateparam!
 
 export AbstractDEWAK, AbstractDeePWAK
 export DEWAK, DEPWAK, DDAEWAK
-export params, set!, data, pca, knn, graph, losslog
+export params, set!, data, pca, knn, graph, losslog, losslabels
 export perm, clusts, partitionmat, modularity
 
 include("clustering.jl")

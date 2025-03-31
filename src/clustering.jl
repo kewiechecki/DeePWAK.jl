@@ -60,12 +60,36 @@ end
 # accepts potentially weighted adjacency matrix G,
 # ptentially weighted partition matrix P, resolution γ
 function modularity(G::AbstractMatrix, P::AbstractMatrix, γ::AbstractFloat)
-    k_v = P * G
-    k_e = P * G'
-    e = sum(k_e, dims = 2)
+    Ĝ = P .* G
+    Ĝ_inv = (1 .- P) .* G
+    m = sum(G)
+    k_v = sum(Ĝ; dims = 2)
+    k_e = sum(Ĝ; dims = 1)
+    e = sum(k_e; dims = 2)
     μ = mean(e)
-    K = sum(k_v, dims = 2)
+    K = sum(k_v; dims = 2)
     H = 1 / (2 * μ) * sum(e .- γ .* K .^ 2 ./ (2 * μ))
     return H
+end
+
+function modularity(G::AbstractMatrix, P::AbstractMatrix, γ::AbstractFloat)
+    k_v = sum(G; dims = 1)
+    m = sum(k_v)
+    K = γ .* k_v * k_v'
+    B = G .- (K ./ (2 * m))
+    tr(P' * B * P)
+end
+
+function silhouette(D::AbstractMatrix, P::AbstractMatrix;
+                    inverse = true)
+    if inverse
+        D = 1 ./ D
+    end
+    G = D .* P
+    G_inv = D .* (1 .- P)
+    d_inter = maximum(G; dims = 2)
+    d_intra = minimum(G_inv; dims = 2)
+    sil = (d_inter .- d_intra) ./ maximum(hcat(d_inter, d_intra); dims = 2)
+    mean(sil)
 end
 
