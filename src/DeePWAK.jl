@@ -3,7 +3,8 @@ module DeePWAK
 using Reexport
 using Flux, Functors
 
-using Distributions, MultivariateStats, SparseArrays, Match, OneHotArrays
+using Distributions, MultivariateStats, SparseArrays, Match,
+    OneHotArrays, InvertedIndices
 @reexport using Leiden
 
 #@reexport using PyCall
@@ -35,7 +36,8 @@ export update!, updateparam!
 export AbstractDEWAK, AbstractDeePWAK
 export DEWAK, DEPWAK, DDAEWAK
 export params, set!, data, pca, knn, graph, losslog, losslabels
-export perm, clusts, partitionmat, modularity
+export perm, clusts, partitionmat
+export silhouette, modularity, cpm, rbpm
 
 include("clustering.jl")
 include("DEWAK.jl")

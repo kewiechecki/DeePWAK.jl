@@ -83,12 +83,16 @@ function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
                                  M.γ + window_γ), n_γ))
 
     P_0 = partition(M)
-    loss_dk = G->(loss ∘ wak)(G .* P_0)
+    #loss_dk = G->(loss ∘ wak)(G .* P_0)
 
-    params_dk,L_dk = update!(M.dewak, loss_dk, window_d, window_k)
+    params_dk,L_dk = update!(M.dewak, loss, window_d, window_k)
     params_dk[:, :γ] .= M.γ
     params_dk[:, :n_clusts] .= maximum(M.clusts)
     updateloss!(M, params_dk, L_dk)
+
+    M.cache.dict[:clusts] = []
+    M.cache.dict[:P] = []
+
     #n_dk, n_col = size(L_dk)
     #L_dk = hcat(L_dk[:, 1:(n_col - 1)],
     #            rep(M.γ, n_dk),
@@ -100,10 +104,11 @@ function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
     #C = map(γ_i->cluster(M, G, γ_i), γ)
     #P = map(partitionmat, C) 
 
-    graph = M.graphfn(dist(M), knn(M))
+    #graph = M.graphfn(dist(M), knn(M))
+    g = graph(M)
 
     kern_γ = γ->begin
-        C = cluster(M, graph, γ)
+        C = cluster(M, g, γ)
         push!(M.cache.dict[:clusts], C)
         P = partitionmat(C)
         push!(M.cache.dict[:P], P)
@@ -112,10 +117,14 @@ function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
     
     #L_γ = map(loss_γ,P)
     params_γ, L_γ = updateparam!(M, :γ, loss, kern_γ, v_γ)
+
+    n_clusts = maximum.(M.cache.dict[:clusts])
+    params_γ.n_clusts .= n_clusts
     updateloss!(M, params_γ, L_γ)
     i = argmin(L_γ[:, 1])
 
     #M.γ = v_γ[i]
+    #M.n_clusts = n_clusts[i]
     M.clusts = M.cache.dict[:clusts][i]
     M.partition = M.cache.dict[:P][i]
     M.cache.dict[:clusts] = []

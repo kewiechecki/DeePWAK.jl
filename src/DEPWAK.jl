@@ -45,14 +45,14 @@ end
 function DEPWAK(dewak::DEWAK, clustfn;
                 graphfn = (D, G)->(D .* G),
                 γ_0 = eps())
-    clusts = clustfn(graphfn(knn(dewak), dist(dewak)), γ_0)
+    clusts = clustfn(graphfn(dist(dewak), knn(dewak)), γ_0)
     partition = partitionmat(clusts)
 
     id_params = vcat((names ∘ params)(dewak), "γ", "n_clusts")
     n_params = length(id_params)
     params_0 = DataFrame(Array{Float64}(undef, 0, n_params), id_params)
 
-    losslabs = losslabels(dewak)
+    losslabs = losslabels(dewak.cache)
     n_loss = length(losslabs)
     L_0 = DataFrame(Array{Float64}(undef, 0, n_loss),
                     losslabs)
@@ -137,6 +137,10 @@ function cluster(M::DEPWAK, G, #::AbstractMatrix,
     M.clustfn(G, γ)
 end
 
+function cluster(M::DEPWAK, γ::AbstractFloat)
+    M.clustfn(graph(M), γ)
+end
+
 function cluster(M::DEPWAK, d::Integer, k::Integer, γ::AbstractFloat)
     G = knn(M, d, k) .* dist(M, d)
     cluster(M, G, γ)
@@ -155,7 +159,12 @@ function partition(M::DEPWAK)
 end
 
 function graph(M::DEPWAK)
-    knn(M) .* partition(M)
+    #knn(M) .* partition(M)
+    M.graphfn(dist(M), knn(M))
+end
+
+function graph(M::DEPWAK, D::AbstractMatrix, G::AbstractMatrix)
+    M.graphfn(D, G)
 end
 
 function kern(M::DEPWAK, d::Integer, k::Integer, γ::AbstractFloat)

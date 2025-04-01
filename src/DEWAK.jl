@@ -16,9 +16,10 @@ end
 =#
 
 function loss(M::AbstractDEWAK)
-    G = graph(M)
+    G = knn(M)
+    D = dist(M)
     E = encode(M, data(M))
-    Ê = (wak(G) * E')'
+    Ê = (wak(G .* D) * E')'
     lossfn(M)(M, G, E, Ê, decode(M, Ê), data(M))
 end
 
@@ -32,7 +33,9 @@ end
 
 function loss(M::AbstractDEWAK, args...)
     G = foldl(.*, [args...])
+    #D = dist(M)
     E = encode(M, data(M))
+    #Ê = (wak(G .* D) * E')'
     Ê = (wak(G) * E')'
     lossfn(M)(M, G, E, Ê, decode(M, Ê), data(M))
 end
@@ -122,7 +125,7 @@ function updatecache!(M::DEWAK, X::AbstractMatrix)
 end
 
 function DEWAK(X::AbstractMatrix;
-               metric = inveucl, losslabs = [:mse],
+               metric = zerodiag ∘ inveucl, losslabs = [:mse],
                lossfn = (_, _, _, _, y, ŷ)->Flux.mse(y, ŷ),
                d_0 = 1, k_0 = 1)
     pca = fit(PCA, X)

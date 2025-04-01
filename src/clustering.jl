@@ -72,18 +72,27 @@ function modularity(G::AbstractMatrix, P::AbstractMatrix, γ::AbstractFloat)
     return H
 end
 
-function modularity(G::AbstractMatrix, P::AbstractMatrix, γ::AbstractFloat)
-    k_v = sum(G; dims = 1)
+# Reichardt Bornholdt Potts model
+function rbpm(G::AbstractMatrix, P::AbstractMatrix, γ::AbstractFloat)
+    k_v = sum(G; dims = 2)
+    k_w = sum(G; dims = 1)
     m = sum(k_v)
-    K = γ .* k_v * k_v'
+    K = γ .* k_v * k_w
     B = G .- (K ./ (2 * m))
-    tr(P' * B * P)
+    sum(P .* B)
 end
 
+# Constant Potts model
+function cpm(G::AbstractMatrix, P:: AbstractMatrix, γ::AbstractFloat)
+    -sum((G .- γ) .* P)
+end
+
+
 function silhouette(D::AbstractMatrix, P::AbstractMatrix;
-                    inverse = true)
-    if inverse
+                    inversedist = true)
+    if inversedist
         D = 1 ./ D
+        D[Not(isfinite.(D))] .= 0
     end
     G = D .* P
     G_inv = D .* (1 .- P)
