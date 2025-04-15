@@ -114,12 +114,12 @@ ${juliaScript}
 EOF
 
 # Replace placeholders with actual paths.
-sed -i \"s|__IGRAPH_JLL__|${toString igraph_jll}|g\" julia_deps.jl
-sed -i \"s|__LEIDEN_JLL__|${toString leiden_jll}|g\" julia_deps.jl
-sed -i \"s|__LEIDEN__|${toString Leiden}|g\" julia_deps.jl
-sed -i \"s|__AUTOENCODERS__|${toString Autoencoders}|g\" julia_deps.jl
-sed -i \"s|__TRAININGIO__|${toString TrainingIO}|g\" julia_deps.jl
-sed -i \"s|__DICTMAP__|${toString DictMap}|g\" julia_deps.jl
+sed -i 's|__IGRAPH_JLL__|${toString igraph_jll}|g' julia_deps.jl
+sed -i 's|__LEIDEN_JLL__|${toString leiden_jll}|g' julia_deps.jl
+sed -i 's|__LEIDEN__|${toString Leiden}|g' julia_deps.jl
+sed -i 's|__AUTOENCODERS__|${toString Autoencoders}|g' julia_deps.jl
+sed -i 's|__TRAININGIO__|${toString TrainingIO}|g' julia_deps.jl
+sed -i 's|__DICTMAP__|${toString DictMap}|g' julia_deps.jl
 
 # Replace the dollar placeholder with a literal dollar sign.
 sed -i 's|__DOLLAR_PLACEHOLDER__|\\$|g' julia_deps.jl
