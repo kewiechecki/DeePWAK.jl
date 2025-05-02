@@ -5,7 +5,7 @@ using Flux, Functors
 
 using Distributions, MultivariateStats, SparseArrays, Match,
     OneHotArrays, InvertedIndices
-@reexport using Leiden
+#@reexport using Leiden
 
 #@reexport using PyCall
 #import PyCall.set!
@@ -36,7 +36,7 @@ export update!, updateparam!
 export AbstractDEWAK, AbstractDeePWAK
 export DEWAK, DEPWAK, DDAEWAK
 export params, set!, data, pca, knn, graph, losslog, losslabels
-export perm, clusts, partitionmat
+export perm, partitionmat#, clusts
 export silhouette, modularity, cpm, rbpm
 
 include("clustering.jl")

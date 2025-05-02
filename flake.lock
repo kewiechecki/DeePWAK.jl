@@ -3,7 +3,9 @@
     "Autoencoders": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1744672835,
@@ -32,22 +34,6 @@
       "original": {
         "owner": "kewiechecki",
         "repo": "DictMap.jl",
-        "type": "github"
-      }
-    },
-    "Leiden": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1684447666,
-        "narHash": "sha256-z4LjshMHA/t1D9cCC2eLZdDpNSH6mFGYwmpBLOPRdFY=",
-        "owner": "pitsianis",
-        "repo": "Leiden.jl",
-        "rev": "86e9142110ef425239aa11578c7edd64124612ea",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pitsianis",
-        "repo": "Leiden.jl",
         "type": "github"
       }
     },
@@ -103,55 +89,7 @@
         "type": "github"
       }
     },
-    "igraph_jll": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1667591370,
-        "narHash": "sha256-oy88CQJLJPzkDmd1Sqev0M+CXFPHIs/D7VTq491eYog=",
-        "owner": "fcdimitr",
-        "repo": "igraph_jll.jl",
-        "rev": "4b8cb043f8480f087f5d050713eced0d898b04d7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "fcdimitr",
-        "repo": "igraph_jll.jl",
-        "type": "github"
-      }
-    },
-    "leiden_jll": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1667600714,
-        "narHash": "sha256-ctt3z3YlgncypAg09jwIqM03GYy2GKOS3R+CXbaz4x8=",
-        "owner": "fcdimitr",
-        "repo": "leiden_jll.jl",
-        "rev": "b1eb404ff4a63ac4b694d2d430997e9e6734687c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "fcdimitr",
-        "repo": "leiden_jll.jl",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
-      "locked": {
-        "lastModified": 1744463964,
-        "narHash": "sha256-LWqduOgLHCFxiTNYi3Uj5Lgz0SR+Xhw3kr/3Xd0GPTM=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "2631b0b7abcea6e640ce31cd78ea58910d31e650",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_2": {
       "locked": {
         "lastModified": 1744463964,
         "narHash": "sha256-LWqduOgLHCFxiTNYi3Uj5Lgz0SR+Xhw3kr/3Xd0GPTM=",
@@ -171,12 +109,9 @@
       "inputs": {
         "Autoencoders": "Autoencoders",
         "DictMap": "DictMap",
-        "Leiden": "Leiden",
         "TrainingIO": "TrainingIO",
         "flake-utils": "flake-utils_2",
-        "igraph_jll": "igraph_jll",
-        "leiden_jll": "leiden_jll",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {

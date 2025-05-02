@@ -2,7 +2,7 @@
 
 julia_version = "1.11.4"
 manifest_format = "2.0"
-project_hash = "656af6e9f8793af2ac2c1dceacc9ca15301bf440"
+project_hash = "0cd4528725b919df6f82f12e171aa3f822ccfdd1"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -1030,12 +1030,6 @@ version = "1.11.0"
 git-tree-sha1 = "a560dd966b386ac9ae60bdd3a3d3a326062d3c3e"
 uuid = "8cdb02fc-e678-4876-92c5-9defec4f444e"
 version = "0.3.1"
-
-[[deps.Leiden]]
-deps = ["LinearAlgebra", "SparseArrays", "igraph_jll", "leiden_jll"]
-path = "/nix/store/611wgj6ynw0knrk6jrnjdc4q935pl83j-source"
-uuid = "8876827e-33c4-4373-8179-6e3204d93767"
-version = "0.1.0"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -2305,18 +2299,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "0ba42241cb6809f1a278d0bcb976e0483c3f1f2d"
 uuid = "1a1c6b14-54f6-533d-8383-74cd7377aa70"
 version = "3.1.1+1"
-
-[[deps.igraph_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-path = "/nix/store/p89x11x3nb62b9qvd57rgyghpkvggnvl-source"
-uuid = "4d841945-e0c2-5143-9479-18e4f0102556"
-version = "0.9.10+0"
-
-[[deps.leiden_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "igraph_jll"]
-path = "/nix/store/5hyzr4d5nj51mvii224n0z1dw14ywnir-source"
-uuid = "b3d7b256-84d9-5f32-9065-d6f1a433f499"
-version = "0.8.2+0"
 
 [[deps.libaec_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]

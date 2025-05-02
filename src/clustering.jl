@@ -23,11 +23,13 @@ function knn(N::AbstractMatrix,k::Integer)
     return sparse(I,J,1,n,n)
 end
                   
+#=
 function clusts(N,k,γ)
     K = knn(N,k)
     C = Leiden.leiden(K,"mod++",γ=γ)
     return C
 end
+=#
 
 function partitionmat_slow(C)
     (sum ∘ map)(unique(C)) do c
