@@ -82,7 +82,7 @@ function update_γ!(M::DEPWAK, f_loss, v_γ)
     n_γ = length(v_γ)
     g = graph(M)
 
-    kern_γ = γ->begin
+    f_kern = γ->begin
         C = cluster(M, g, γ)
         push!(M.cache.dict[:clusts], C)
         P = partitionmat(C)
