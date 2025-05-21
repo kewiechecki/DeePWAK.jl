@@ -80,6 +80,7 @@ end
 
 function update_γ!(M::DEPWAK, f_loss, v_γ)
     n_γ = length(v_γ)
+    G = dist(M) .* knn(M)
     g = graph(M)
 
     f_kern = γ->begin
