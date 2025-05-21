@@ -83,19 +83,22 @@ function update_γ!(M::DEPWAK, f_loss, v_γ)
     G = dist(M) .* knn(M)
     g = graph(M)
 
-    f_kern = γ->begin
+    v_G = []
+    n_clusts = []
+    f_kern! = γ->begin
         C = cluster(M, g, γ)
         push!(M.cache.dict[:clusts], C)
         P = partitionmat(C)
         push!(M.cache.dict[:P], P)
-        wak(G .* P), maximum(C)
+        push!(v_G, wak(G .* P))
+        push!(n_clusts, maximum(C))
     end
 
-    v_G, n_clusts = map(f_kern,v_γ)
+    map(f_kern! ,v_γ);
     L = mapreduce(G->hcat(f_loss(G)...), vcat, v_G)
 
-    tab = vcat(rep(params(M), n_v)...)
-    tab[:, :γ] = v_param
+    tab = vcat(rep(params(M), n_γ)...)
+    tab[:, :γ] = v_γ
     tab[:, :n_clusts] = n_clusts
 
     losslabs = losslabels(M.cache)

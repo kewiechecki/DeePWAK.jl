@@ -99,7 +99,8 @@ function silhouette(D::AbstractMatrix, P::AbstractMatrix;
     G = D .* P
     G_inv = D .* (1 .- P)
     d_inter = maximum(G; dims = 2)
-    d_intra = minimum(G_inv; dims = 2)
+    d_intra = minimum.(map(x->filter(i->i > 0, x), 
+                           eachslice(G_inv, dims = 2)))
     sil = (d_inter .- d_intra) ./ maximum(hcat(d_inter, d_intra); dims = 2)
     mean(sil)
 end
