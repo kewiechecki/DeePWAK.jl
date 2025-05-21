@@ -1,4 +1,4 @@
-function update!(M::DEWAK, loss, window_d, window_k)
+function update!(M::DEWAK, f_loss, window_d, window_k)
     #d_max = length(cache(M)[:d])
     #k_max = size(cache(M)[:k][1],1)
     d_max,k_max = size(M.pcs)
@@ -21,12 +21,12 @@ function update!(M::DEWAK, loss, window_d, window_k)
     
     #params_d,L_d = updateparam!(M,:d,loss,
     #                            d->kern(M,d,M.k),v_d)
-    params_d, L_d = updateparam!(M, :d, loss, kern_d, v_d)
+    params_d, L_d = updateparam!(M, :d, f_loss, kern_d, v_d)
     M.dist = M.cache.dict[:dist][argmin(L_d[:, 1])]
     
     #params_k,L_k = updateparam!(M,:k,loss,
     #                   k->kern(M,M.d,k),v_k)
-    params_k,L_k = updateparam!(M,:k, loss, kern_k, v_k)
+    params_k,L_k = updateparam!(M,:k, f_loss, kern_k, v_k)
     M.graph = M.cache.dict[:graph][argmin(L_k[:, 1])]
 
     M.cache.dict[:dist] = []
@@ -51,13 +51,13 @@ function updateparam!(M::AbstractDEWAK, id_param, f_loss, f_kern, v_param)
     return tab, losstab
 end
 
-function update_d!(M::DEWAK, loss, d)
+function update_d!(M::DEWAK, f_loss, d)
     n_d = length(d)
 
     G = map(d_i->kern(M, d_i, M.k), d)
     
-    L_d = map(loss, G)
-    L_d = DataFrame(d = d, k = M.k, loss = L_d)
+    L_d = map(f_loss, G)
+    L_d = DataFrame(d = d, k = M.k, f_loss = L_d)
     L_d = hcat(d, rep(M.k, n_d), L_d)
 
     M.d = d[argmin(L_d[:, 3])]
@@ -65,12 +65,12 @@ function update_d!(M::DEWAK, loss, d)
     return L_d
 end
 
-function update_k!(M::DEWAK, loss, k)
+function update_k!(M::DEWAK, f_loss, k)
     n_k = length(k)
 
     G = map(k_i->kern(M, M.d, k_i), k)
     
-    L_k = map(loss, G)
+    L_k = map(f_loss, G)
     L_k = hcat(rep(M.d, n_k), k, L_k)
     
     M.k = k[argmin(L_k[:, 3])]
@@ -78,14 +78,42 @@ function update_k!(M::DEWAK, loss, k)
     return L_k
 end
 
-function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
+function update_γ!(M::DEPWAK, f_loss, v_γ)
+    n_γ = length(v_γ)
+    g = graph(M)
+
+    kern_γ = γ->begin
+        C = cluster(M, g, γ)
+        push!(M.cache.dict[:clusts], C)
+        P = partitionmat(C)
+        push!(M.cache.dict[:P], P)
+        wak(G .* P), maximum(C)
+    end
+
+    v_G, n_clusts = map(f_kern,v_γ)
+    L = mapreduce(G->hcat(f_loss(G)...), vcat, v_G)
+
+    tab = vcat(rep(params(M), n_v)...)
+    tab[:, :γ] = v_param
+    tab[:, :n_clusts] = n_clusts
+
+    losslabs = losslabels(M.cache)
+    losstab = DataFrame(L, losslabs)
+
+    updateloss!(M, tab, losstab)
+    set!(M, id_param, v_param[argmin(L[:, 1])])
+    return tab, losstab
+end   
+
+function update!(M::DEPWAK, f_loss, window_d, window_k, window_γ, n_γ)
     v_γ = vcat(M.γ, rand(Uniform(relu(M.γ - window_γ),
                                  M.γ + window_γ), n_γ))
 
     P_0 = partition(M)
-    #loss_dk = G->(loss ∘ wak)(G .* P_0)
+    #loss_dk = G->(f_loss ∘ wak)(G .* P_0)
+    loss_dk = G->f_loss(M.dewak, G .* P_0)
 
-    params_dk,L_dk = update!(M.dewak, loss, window_d, window_k)
+    params_dk,L_dk = update!(M.dewak, f_loss, window_d, window_k)
     params_dk[:, :γ] .= M.γ
     params_dk[:, :n_clusts] .= maximum(M.clusts)
     updateloss!(M, params_dk, L_dk)
@@ -98,6 +126,7 @@ function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
     #            rep(M.γ, n_dk),
     #            L_dk[:, n_col])
 
+    #=
     G = dist(M) .* knn(M)
     #loss_P = P->(loss ∘ wak)(G .* P)
 
@@ -120,6 +149,8 @@ function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
 
     n_clusts = maximum.(M.cache.dict[:clusts])
     params_γ.n_clusts .= n_clusts
+    =#
+    params_γ, L_γ = update_γ!(M, f_loss, kern_γ, v_γ)
     updateloss!(M, params_γ, L_γ)
     i = argmin(L_γ[:, 1])
 
@@ -138,13 +169,13 @@ function update!(M::DEPWAK, loss, window_d, window_k, window_γ, n_γ)
     return params, L
 end 
 
-function update!(M::DDAEWAK, loss, opt, args...)
+function update!(M::DDAEWAK, f_loss, opt, args...)
     G_0 = kern(M) |> gpu
     X = data(M) |> gpu
     #loss_dec = m->Flux.mse(decode(m, (G * encode(m, X)')'),X)
-    loss_dec = m->loss(m, decode(m, (G * encode(m, X)')'), X)
+    loss_dec = m->f_loss(m, decode(m, (G * encode(m, X)')'), X)
     
-    L = update!(M.autoencoder, loss, opt)
+    L = update!(M.autoencoder, f_loss, opt)
 
     M.epoch = M.epoch + 1
     tab = params(M)
@@ -153,9 +184,9 @@ function update!(M::DDAEWAK, loss, opt, args...)
 
     E = encode(M, X) |> cpu
     
-    loss_wak = (G)->loss(decode(M, wak((G * E')')), X)
+    loss_wak = (G)->f_loss(decode(M, wak((G * E')')), X)
     M.dewak.dat = encode(M,data(M))
-    L_dk = update!(M.dewak, G_i->loss(M, G_i), window_d, window_k)
+    L_dk = update!(M.dewak, G_i->f_loss(M, G_i), window_d, window_k)
     L = vcat(L, L_dk)
     return L
 end

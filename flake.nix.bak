@@ -4,16 +4,14 @@
 
   inputs = {
     utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; # Or pin to match CrobustaScreen
-	#nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11"; # Or other stable branch
+    #nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; # Or pin to match CrobustaScreen
+	nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11"; # Or other stable branch
 
     # --- DeePWAK's Julia Dependencies ---
     # Non-flake source inputs (renamed with Src suffix)
-	/*
     igraph_jllSrc = { url = "github:fcdimitr/igraph_jll.jl"; flake = false; };
     leiden_jllSrc = { url = "github:fcdimitr/leiden_jll.jl"; flake = false; };
     LeidenSrc = { url = "github:pitsianis/Leiden.jl"; flake = false; };
-	*/
     # Flake inputs providing Nix packages
     Autoencoders = { url = "github:kewiechecki/Autoencoders.jl"; flake = true; inputs.nixpkgs.follows = "nixpkgs"; };
     DictMap = { url = "github:kewiechecki/DictMap.jl"; flake = true; inputs.nixpkgs.follows = "nixpkgs"; };
@@ -22,14 +20,13 @@
 
   outputs = { 
     self, nixpkgs, utils,
-	#igraph_jllSrc, leiden_jllSrc, LeidenSrc,
+	igraph_jllSrc, leiden_jllSrc, LeidenSrc,
 	Autoencoders, DictMap, TrainingIO
   }@inputs: # Use @inputs syntax
     utils.lib.eachDefaultSystem (system:
       let
         # --- Julia Package Overlay ---
         # Defines how Nix finds/builds all custom Julia deps needed by DeePWAK
-		/*
         juliaOverlay = final: prev: {
           juliaPackages = prev.juliaPackages // { # <<< Standard // merge
             # Build packages from source inputs
@@ -48,23 +45,20 @@
             TrainingIO = inputs.TrainingIO.packages.${system}.default;
           };
         };
-		*/
 
         # --- Base Nixpkgs with Overlay ---
         pkgs = import nixpkgs {
           inherit system;
-          #overlays = [ juliaOverlay ]; # <<< Apply the overlay
+          overlays = [ juliaOverlay ]; # <<< Apply the overlay
           config = { allowUnfree = true; cudaSupport = system == "x86_64-linux"; };
         };
  
         # --- Access Overlay Packages by Name ---
         # Get handles to the Nix derivations defined/imported via the overlay.
         # We can now use these variables below.
-		/*
         igraph_jllPkg = pkgs.juliaPackages.igraph_jll;
         leiden_jllPkg = pkgs.juliaPackages.leiden_jll;
         leidenPkg = pkgs.juliaPackages.Leiden;
-		*/
         autoencodersPkg = pkgs.juliaPackages.Autoencoders;
         dictMapPkg = pkgs.juliaPackages.DictMap;
         trainingIOPkg = pkgs.juliaPackages.TrainingIO;
@@ -75,7 +69,6 @@
         # --- Build DeePWAK.jl ---
         # Assumes DeePWAK/Project.toml lists dependencies like "Leiden", "Autoencoders", etc.
         # buildJuliaPackage uses the overlay-enhanced pkgs to find them.
-		/*
         deePWAKbuilt = juliaPkgs.buildJuliaPackage {
           pname = "DeePWAK";
           version = "0.1.2";
@@ -90,19 +83,17 @@
             igraph_jllPkg
             leiden_jllPkg
             leidenPkg
-			autoencodersPkg
+            autoencodersPkg
             dictMapPkg
             trainingIOPkg
           ];
         };
-		*/
 
         # --- Shell Environment Packages ---
         shellPkgsNested = with pkgs; [
           julia git stdenv.cc gfortran stdenv.cc.cc.lib
           (lib.optional stdenv.isLinux cudaPackages.cudatoolkit)
           (lib.optional stdenv.isLinux cudaPackages.cudnn)
-
           # Add deePWAKbuilt here if you want the nix-built version easily importable in shell
           # deePWAKbuilt
         ];
@@ -110,8 +101,8 @@
 
       in {
         # Export the built DeePWAK package
-        #packages.deePWAK = deePWAKbuilt;
-        #packages.default = self.packages.${system}.deePWAK;
+        packages.deePWAK = deePWAKbuilt;
+        packages.default = self.packages.${system}.deePWAK;
 
         # Development Shell
         devShell = pkgs.mkShell { # Use pkgs. explicitly
