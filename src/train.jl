@@ -150,7 +150,7 @@ function update!(M::DEPWAK, f_loss, window_d, window_k, window_γ, n_γ)
     n_clusts = maximum.(M.cache.dict[:clusts])
     params_γ.n_clusts .= n_clusts
     =#
-    params_γ, L_γ = update_γ!(M, f_loss, kern_γ, v_γ)
+    params_γ, L_γ = update_γ!(M, f_loss, v_γ)
     updateloss!(M, params_γ, L_γ)
     i = argmin(L_γ[:, 1])
 
