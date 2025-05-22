@@ -105,7 +105,7 @@ function update_γ!(M::DEPWAK, f_loss, v_γ)
     losstab = DataFrame(L, losslabs)
 
     updateloss!(M, tab, losstab)
-    set!(M, :γ, v_param[argmin(L[:, 1])])
+    set!(M, :γ, v_γ[argmin(L[:, 1])])
     return tab, losstab
 end   
 
